@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-typing Python Code Animation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Courier New', monospace;
+        }
+        #code-container {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 5px;
+            width: 600px;
+            height: 400px;
+            overflow: auto;
+            position: relative;
+        }
+        #code {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        #cursor {
+            background-color: #d4d4d4;
+            position: absolute;
+            width: 2px;
+            height: 1.2em;
+            animation: blink 0.7s infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        .token.comment { color: #6A9955; }
+        .token.string { color: #CE9178; }
+        .token.number { color: #B5CEA8; }
+        .token.keyword { color: #569CD6; }
+        .token.function { color: #DCDCAA; }
+        .token.class-name { color: #4EC9B0; }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        #code-container::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        #code-container {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body>
+    <div id="code-container">
+        <pre><code id="code" class="language-python"></code></pre>
+        <span id="cursor"></span>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
+    <script>
+        const codeSnippet = `import moviepy.editor as mp
+import whisper
+import soundfile as sf
+import numpy as np
+
+# Load video and extract audio
+video = mp.VideoFileClip("input_video.mp4")
+audio = video.audio
+audio.write_audiofile("original_audio.wav")
+
+# Load and process audio with Whisper model
+model = whisper.load_model("base")
+result = model.transcribe("original_audio.wav")
+altered_audio_text = some_custom_text_alteration(result["text"])  # Apply custom text alterations
+altered_audio = model.synthesize(altered_audio_text)
+
+# Save the altered audio
+sf.write("altered_audio.wav", altered_audio, 16000)
+
+# Combine altered audio with the original video
+final_video = video.set_audio(mp.AudioFileClip("altered_audio.wav"))
+final_video.write_videofile("output_video.mp4")`;
+
+        const codeElement = document.getElementById('code');
+        const cursorElement = document.getElementById('cursor');
+        const containerElement = document.getElementById('code-container');
+        let index = 0;
+        const typingSpeed = 25000 / codeSnippet.split('\n').length; // Approximately one line every 25 seconds
+
+        function updateCursorPosition() {
+            const textNode = codeElement.lastChild;
+            if (textNode) {
+                const range = document.createRange();
+                range.setStart(textNode, textNode.length);
+                range.setEnd(textNode, textNode.length);
+                const rect = range.getBoundingClientRect();
+                cursorElement.style.left = `${rect.right - containerElement.getBoundingClientRect().left + containerElement.scrollLeft}px`;
+                cursorElement.style.top = `${rect.top - containerElement.getBoundingClientRect().top + containerElement.scrollTop}px`;
+            }
+        }
+
+        function scrollToBottom() {
+            containerElement.scrollTop = containerElement.scrollHeight;
+        }
+
+        function typeCode() {
+            if (index < codeSnippet.length) {
+                codeElement.textContent += codeSnippet.charAt(index);
+                Prism.highlightElement(codeElement);
+                updateCursorPosition();
+                scrollToBottom();
+                index++;
+                setTimeout(typeCode, typingSpeed / codeSnippet.length);
+            } else {
+                // Reset and start over
+                setTimeout(() => {
+                    codeElement.textContent = '';
+                    index = 0;
+                    containerElement.scrollTop = 0;
+                    typeCode();
+                }, 2000); // 2-second pause before restarting
+            }
+        }
+
+        typeCode(); // Start the typing animation
+    </script>
+</body>
+</html>
